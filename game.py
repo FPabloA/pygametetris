@@ -131,9 +131,6 @@ shapes = [S, Z, I, O, J, L, T]
 shape_colors = [(0, 255, 0), (255, 0, 0), (0, 255, 255), (255, 255, 0), (255, 165, 0), (0, 0, 255), (128, 0, 128)]
 
 class Piece():
-        rows = 20   #y
-        cols = 10   #x
-
         def __init__(self, col, row, shape):
             self.x = col
             self.y = row
@@ -151,6 +148,8 @@ class TetrisGame():
 
         self.grid = [[]]
 
+        self.score = 0
+
         self.display = pygame.display.set_mode((window_w, window_h))
         pygame.display.set_caption('Tetris')
 
@@ -158,7 +157,7 @@ class TetrisGame():
     
     def createGrid(self, locked_positions={}):
         #grid is initially filled with white spaces as no pieces have been placed
-        grid=[[(0,0,0) for x in range(10)] for x in range(20)] 
+        grid=[[(0,0,0) for _ in range(10)] for _ in range(20)] 
 
         #fill in colors for pieces that are already placed (from dictionary of positions?)
         for i in range(len(grid)):
@@ -169,21 +168,27 @@ class TetrisGame():
         return grid
 
     def getPiece(self):
-        global shapes, shape_colors
         return Piece(5, 0, random.choice(shapes))
+
+    def checkLost(self, positions):
+        for pos in positions:
+            x,y = pos
+            if y < 1:
+                return True
+        return False
     
-    def drawGrid(self, row, col):
+    def drawGrid(self):
         sx = self.top_left_x
         sy = self.top_left_y
-        for i in range(row):
+
+        for i in range(len(self.grid)):
             pygame.draw.line(self.display, (128,128,128), (sx, sy + i * 30), (sx + self.w, sy + i * 30))
             
-            for j in range(col):
+            for j in range(len(self.grid[i])):
                 pygame.draw.line(self.display, (128,128,128), (sx + j * 30, sy), (sx + j * 30, sy + self.h))
 
     
     def playStep(self):
-        print("playing step")
         locked_positions = {}   #(x,y):(255,0,0)
         self.grid = self.createGrid(locked_positions)
 
@@ -191,15 +196,23 @@ class TetrisGame():
         run = True
         currPiece = self.getPiece()
         nextPiece = self.getPiece()
+
         fall_time = 0
+        fall_speed = 0.27
+        level_time = 0
+
 
         while run:
 
-            fall_speed = 0.27
-
             self.grid = self.createGrid(locked_positions)
+            level_time += self.clock.get_rawtime()
             fall_time += self.clock.get_rawtime()
             self.clock.tick()
+
+            if level_time/1000 > 5:
+                level_time = 0
+                if level_time > 0.12:
+                    level_time -= 0.005
 
             #piece falling
             if fall_time/1000 >= fall_speed:
@@ -252,16 +265,20 @@ class TetrisGame():
                 nextPiece = self.getPiece()
                 changePiece = False
             
-            self.clearRows(locked_positions)
+                self.score += self.clearRows(locked_positions) * 10
 
         
             self.drawWindow(self.display)
             self.drawNextShape(nextPiece)
             pygame.display.update()
 
+            if self.checkLost(locked_positions):
+                run = False
+        
+        return (True, self.score)
+
 
     def drawWindow(self, surface):
-        print("in draw window")
         surface.fill((0,0,0))
 
         #Title
@@ -270,25 +287,33 @@ class TetrisGame():
 
         surface.blit(label, (self.top_left_x + self.w / 2 - (label.get_width() / 2), 30))
 
+        font = pygame.font.SysFont('comicsans', 30)
+        label = font.render('Score: ' + str(self.score), 1, (255,255,255))
+
+        sx = self.top_left_x +self.w + 50
+        sy = self.top_left_y + self.h/2 - 100
+        surface.blit(label, (sx + 20, sy + 160))
+
         for i in range(len(self.grid)):
             for j in range(len(self.grid[i])):
                 pygame.draw.rect(surface, self.grid[i][j], (self.top_left_x + j*30, self.top_left_y + i*30, 30, 30), 0)
         
         #draw grid and border
-        self.drawGrid(20, 10)
+        self.drawGrid()
         pygame.draw.rect(surface, (255, 0, 0), (self.top_left_x, self.top_left_y, self.w, self.h), 5)
         pygame.display.update()
+
 
     def validSpace(self, shape):
         acceptedPos = [[(j, i) for j in range(10) if self.grid[i][j] == (0,0,0)] for i in range(20)]
         acceptedPos = [j for sub in acceptedPos for j in sub]
+
         formatted = self.convShape(shape)
 
         for pos in formatted:
-            if pos not in formatted:
-                if pos not in acceptedPos:
-                    if pos[1] > -1:
-                        return False
+            if pos not in acceptedPos:
+                if pos[1] > -1:
+                    return False
 
         return True
 
@@ -337,11 +362,10 @@ class TetrisGame():
             row = self.grid[i]
             if (0,0,0) not in row:
                 inc += 1
-
-                ind = 1
+                ind = i
                 for j in range(len(row)):
                     try:
-                        del locked[(i,j)]
+                        del locked[(j,i)]
                     except:
                         continue
         if inc > 0:
@@ -349,15 +373,9 @@ class TetrisGame():
                 x, y = key
                 if y < ind:
                     newKey = (x, y + inc)
-                    locked[newKey] = locked.pop(key)  
+                    locked[newKey] = locked.pop(key)
 
-    def move(self):
-        #TODO write code for moving pieces left or right (maybe rotation should be in here)
-        pass
-
-    def rotate(self):
-        #TODO write code for rotating pieces CW
-        pass
+        return inc  
     
 if __name__ == '__main__':
     game = TetrisGame()
