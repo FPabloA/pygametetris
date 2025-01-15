@@ -188,7 +188,7 @@ class TetrisGame():
                 pygame.draw.line(self.display, (128,128,128), (sx + j * 30, sy), (sx + j * 30, sy + self.h))
 
     
-    def playStep(self, action):
+    def playStep(self):
         locked_positions = {}   #(x,y):(255,0,0)
         self.grid = self.createGrid(locked_positions)
 
@@ -228,38 +228,27 @@ class TetrisGame():
                     pygame.display.quit()
                     quit()
                 
-                #TODO
-                #self.move(action)
-                reward = 0
-                #change validspace to fix the position in the function if out of bounds
-                #Maybe check valid space in self.move?
-                #if not self.validSpace(currPiece): 
-                #   reward -= 10
-                #   return reward, game_overm self.score
-
-                
-
-                # if event.type == pygame.KEYDOWN:
-                #     if event.key == pygame.K_LEFT:
-                #         currPiece.x -= 1
-                #         if not self.validSpace(currPiece):
-                #             currPiece.x += 1
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_LEFT:
+                        currPiece.x -= 1
+                        if not self.validSpace(currPiece):
+                            currPiece.x += 1
                     
-                #     elif event.key == pygame.K_RIGHT:
-                #         currPiece.x += 1
-                #         if not self.validSpace(currPiece):
-                #             currPiece.x -= 1
+                    elif event.key == pygame.K_RIGHT:
+                        currPiece.x += 1
+                        if not self.validSpace(currPiece):
+                            currPiece.x -= 1
 
-                #     elif event.key == pygame.K_UP:
-                #         #rotate shape
-                #         currPiece.rotation = currPiece.rotation + 1 % len(currPiece.shape)
-                #         if not self.validSpace(currPiece):
-                #             currPiece.rotation = currPiece.rotation - 1 % len(currPiece.shape)
+                    elif event.key == pygame.K_UP:
+                        #rotate shape
+                        currPiece.rotation = currPiece.rotation + 1 % len(currPiece.shape)
+                        if not self.validSpace(currPiece):
+                            currPiece.rotation = currPiece.rotation - 1 % len(currPiece.shape)
                     
-                #     elif event.key == pygame.K_DOWN:
-                #         currPiece.y += 1
-                #         if not self.validSpace(currPiece):
-                #             currPiece.y -= 1
+                    elif event.key == pygame.K_DOWN:
+                        currPiece.y += 1
+                        if not self.validSpace(currPiece):
+                            currPiece.y -= 1
 
             shapePos = self.convShape(currPiece)
 
@@ -276,9 +265,7 @@ class TetrisGame():
                 nextPiece = self.getPiece()
                 changePiece = False
             
-                temp = self.clearRows(locked_positions)
-                self.score += temp
-                reward += temp * 10
+                self.score += self.clearRows(locked_positions) * 10
 
         
             self.drawWindow(self.display)
@@ -288,7 +275,7 @@ class TetrisGame():
             if self.checkLost(locked_positions):
                 run = False
         
-        return (reward, True, self.score)
+        return (True, self.score)
 
 
     def drawWindow(self, surface):
@@ -388,22 +375,7 @@ class TetrisGame():
                     newKey = (x, y + inc)
                     locked[newKey] = locked.pop(key)
 
-        return inc
-
-    def move(self, action, currPiece):
-        #TODO
-        #left
-        #if np.array_equal(action, [1,0,0,0]):
-        #   currPiece.x += 1
-        #right
-        #if np.array_equal(action, [0,1,0,0]):
-        #   currPiece.x -= 1
-        #rotate
-        #if np.array_equal(action, [0,0,1,0]):
-        #   currPiece.rotation = currPiece.rotation + 1 % len(currPiece.shape)
-        #if np.array_equal(action, [0,0,0,1]);
-        #   currPiece.y += 1
-        pass  
+        return inc  
     
 if __name__ == '__main__':
     game = TetrisGame()
